@@ -2,12 +2,11 @@ import requests
 import json
 import csv
 import os
-
 import time
 
 
 #print(d['date_added'],d['date'],d['price'],d['title_1'],d['line_2'],d['line_1'],d['line_3'])
-
+os.remove('yad2.csv')
 def output_csv(date_added,date_update,address,size,floor,roms,price,neighborhood):
     if os.path.exists('yad2.csv'):
         header_exists = True
@@ -20,7 +19,8 @@ def output_csv(date_added,date_update,address,size,floor,roms,price,neighborhood
             writer.writeheader()
         writer.writerow({'date_added':date_added,'date_update': date_update,'neighborhood':neighborhood,'address':address,'size':size,'floor':floor,'roms':roms,'price':price})
 
-
+def is_float(number):
+    return isinstance(number, float)
 
 headers = {
     'Accept': 'application/json, text/plain, */*',
@@ -41,7 +41,7 @@ headers = {
     'sec-ch-ua-mobile': '?0',
     'sec-ch-ua-platform': 'Windows',
 }
-for i in range(1,11):
+for i in range(1,20):
     url = f'https://gw.yad2.co.il/feed-search-legacy/realestate/rent?topArea=25&area=5&city=4000&propertyGroup=apartments&price=0-4500&page={i}&forceLdLoad=true'
     time.sleep(1)
     response = requests.get(url, headers=headers)
@@ -54,12 +54,18 @@ for i in range(1,11):
                 neighborhood =d['neighborhood']
             except KeyError:
                 neighborhood = None
-
             try:
-                print(d['date_added'], d['date'], d['price'], d['title_1'], d['line_2'], d['line_1'], d['line_3'],neighborhood)
-                output_csv(date_added=d['date_added'], date_update=d['date'], floor=d['line_2'], price=d['price'],
-                           address=d['title_1'], size=d['line_3'], roms=d['line_1'],neighborhood=neighborhood)
-            except KeyError:
+
+                rooms = float(str(d['line_1']).split()[0])
+                size = int(str(d['line_3']).split()[0])
+                if size >= 80 and rooms > 3:
+                    print(d['date_added'], d['date'], d['price'], d['title_1'], d['line_2'], d['line_1'], d['line_3'],
+                          neighborhood)
+                    output_csv(date_added=d['date_added'], date_update=d['date'], floor=d['line_2'], price=d['price'],
+                               address=d['title_1'], size=size, roms=str(d['line_1']).split()[0],
+                               neighborhood=neighborhood)
+
+            except (KeyError,ValueError):
                 pass
     else:
         print(f"Request failed with status code: {response.status_code}")
